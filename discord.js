@@ -3,10 +3,11 @@ const got = require("got");
 const create = async (server, payload) => {
   if (!server.webhook) {
     return payload.embeds.forEach(({ title, description }) =>
-      console.log(`Hook -> ${title}: ${description}`)
+      console.log(`${server.name} -> ${title}: ${description}`)
     );
   }
-  const { body } = await got.post(server.webhook, {
+  const { body } = await got.post(`${server.webhook}?wait=true`, {
+    responseType: 'json',
     json: {
       content: null,
       ...payload,
@@ -27,12 +28,12 @@ const update = (server, payload) => {
       content: null,
       ...payload,
     },
-  }).catch((err) => console.error(err));
+  }).catch((err) => console.error(err.response.body));
 };
 
 const getBaseEmbed = server => ({
-  fields: server.players.map(player => ({
-    name: "Player 1",
+  fields: server.players.map((player, i) => ({
+    name: `Player ${i+1}`,
     value: "`" + player.name + "`",
     inline: true,
   })),
@@ -45,7 +46,7 @@ const getBaseEmbed = server => ({
 });
 
 module.exports.onBoot = async server => {
-  server.messageId = await create(server.webhook, {
+  server.messageId = await create(server, {
     embeds: [
       {
         title: "Server is booting...",

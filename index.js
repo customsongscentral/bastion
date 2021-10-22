@@ -3,7 +3,7 @@ require('dotenv').config();
 const WebSocket = require("ws");
 const child = require("child_process");
 const discord = require('./discord');
-const { CHSERVER_BIN_PATH } = process.env;
+const { CHSERVER_BIN_PATH, BASTION_WS_PORT } = process.env;
 
 const servers = [];
 for (let i = 1; process.env[`BASTION_SERVER_${i}_NAME`]; ++i) {
@@ -20,6 +20,7 @@ for (let i = 1; process.env[`BASTION_SERVER_${i}_NAME`]; ++i) {
 }
 if (!servers.length) throw new Error('Please `cp .env.example .env` and follow the example to configure servers.');
 
+let wss;
 const broadcast = msg => wss.clients.forEach(s => {
   if (s.readyState === WebSocket.OPEN) s.send(msg);
 });
@@ -55,8 +56,8 @@ const onGameData = (msg, server) => {
     const [, playerIndex, ...rest] = msg.split(' ');
     let name = '';
     // Profile string starts at the 3rd byte,
-    // and '12' marks the end of the profile name string.
-    for (let i = 2; rest[i] != '12'; ++i) {
+    // and anything below 32 (space) should mark the end of the profile name string.
+    for (let i = 1; rest[i] >= ' '; ++i) {
       name += String.fromCharCode(rest[i]);
     }
     // Trim tags away just in case
@@ -114,13 +115,12 @@ const onGameData = (msg, server) => {
 
 const main = async () => {
   await Promise.all(servers.map(discord.onBoot));
-  const wss = new WebSocket.Server({ port: BASTION_WS_PORT });
+  wss = new WebSocket.Server({ port: BASTION_WS_PORT });
   const spawns = servers.map(server => child.spawn(CHSERVER_BIN_PATH, [
     '-p', server.port,
     '-a', '0.0.0.0',
     '-n', server.name,
-    ...(server.password ? ['-ps', server.password] : ['-np']),
-    '-r',
+    ...(server.password ? ['-ps', server.password] : ['-np'])
   ]));
   spawns.forEach((spawn, i) => spawn.stdout.on("data", makeOnGameData(servers[i])));
 
@@ -146,8 +146,7 @@ const main = async () => {
           '-p', server.port,
           '-a', '0.0.0.0',
           '-n', server.name,
-          ...(server.password ? ['-ps', server.password] : ['-np']),
-          '-r',
+          ...(server.password ? ['-ps', server.password] : ['-np'])
         ]);
         spawns[index].stdout.on('data', makeOnGameData(servers[index]));
         SERVERS[index].players = [];
