@@ -1,0 +1,14 @@
+{
+  "name": "@csc/bastion",
+  "version": "1.0.0.3075-master",
+  "description": "Makeshift WebSocket API for self-hosted Clone Hero online servers",
+  "main": "index.js",
+  "repository": "https://github.com/customsongscentral/bastion",
+  "author": "Paturages",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "got": "^11.8.2",
+    "ws": "^8.2.3"
+  }
+}
