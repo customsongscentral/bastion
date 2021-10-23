@@ -28,7 +28,7 @@ const update = (server, payload) => {
       content: null,
       ...payload,
     },
-  }).catch((err) => console.error(err.response.body));
+  }).catch((err) => console.error(server.name, err.response.body, payload));
 };
 
 const getBaseEmbed = server => ({

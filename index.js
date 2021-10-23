@@ -40,16 +40,18 @@ const onGameData = (msg, server) => {
     let changed = false;
     // Failsafe: If for some reason, the player profile was not detected,
     // slip in a '???' player.
-    if (!server.players[playerIndex]) {
+    if (!server.players[playerIndex] && +playerIndex <= 1) {
       server.players[playerIndex] = { name: '???' };
     }
     const player = server.players[playerIndex];
-    const { score, combo, sp } = player;
-    changed = newScore != score || newCombo != combo || newSp != sp;
-    server.players[playerIndex].score = newScore;
-    server.players[playerIndex].combo = newCombo;
-    server.players[playerIndex].sp = newSp;
-    if (server.broadcast && changed) broadcast(msg);
+    if (player) {
+      const { score, combo, sp } = player;
+      changed = newScore != score || newCombo != combo || newSp != sp;
+      server.players[playerIndex].score = newScore;
+      server.players[playerIndex].combo = newCombo;
+      server.players[playerIndex].sp = newSp;
+      if (server.broadcast && changed) broadcast(msg);
+    }
   } else if (msg.startsWith("profile")) {
     // For profiles, we only really want to know who joined in which spot,
     // not the entire profile information.
@@ -57,7 +59,7 @@ const onGameData = (msg, server) => {
     let name = '';
     // Profile string starts at the 3rd byte,
     // and anything below 32 (space) should mark the end of the profile name string.
-    for (let i = 1; rest[i] >= ' '; ++i) {
+    for (let i = 1; +rest[i] >= 32; ++i) {
       name += String.fromCharCode(rest[i]);
     }
     // Trim tags away just in case
@@ -105,7 +107,7 @@ const onGameData = (msg, server) => {
     player.spAccrued = spAccrued;
     // If the stats are already shown and this is coming for some reason,
     // refresh Discord with the extra information
-    if (server.broadcast && server.scene == 'stats') discord.onResults(server);
+    if (server.scene == 'stats') discord.onResults(server);
   } else if (msg.includes("Server running")) {
     // Detect that the server is actually online through the default logging
     if (server.broadcast) broadcast('online');
