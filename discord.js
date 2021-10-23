@@ -6,20 +6,16 @@ const got = require("got");
 //   Useful for a "server status" channel.
 // Both of them are optional: use both, one of them or none.
 
-const logErrResponse = err => console.error('Hook error:', server.name, err.response.body, payload);
+const logErrResponse = (server, err) => console.error('Hook error:', server.name, err.response.body, payload);
 
 const generate = async (server, payload) => {
-  payload.embeds.forEach(({ title, description }) =>
-    console.log(`${server.name} -> ${title}: ${description || '-'}`)
-  );
-  const args = {
-    responseType: 'json',
-    json: {
-      content: null,
-      ...payload,
-    },
+  if (!server.loghook && !server.statushook) {
+    payload.embeds.forEach(({ title, description }) =>
+      console.log(`${server.name} -> ${title}: ${description || '-'}`)
+    );
   }
-  if (server.loghook) got.post(server.loghook, args).catch(logErrResponse);
+  const args = { responseType: 'json', json: { content: null, ...payload, } };
+  if (server.loghook) got.post(server.loghook, args).catch(err => logErrResponse(server, err));
   if (server.statushook) {
     const { body } = await got.post(`${server.statushook}?wait=true`, args);
     return body.id;
@@ -27,17 +23,14 @@ const generate = async (server, payload) => {
 };
 
 const update = (server, payload) => {
-  payload.embeds.forEach(({ title, description }) =>
-    console.log(`Hook -> ${title}: ${description}`)
-  );
-
-  got.post(server.loghook, args).catch(logErrResponse);
-  got.patch(`${server.statushook}/messages/${server.messageId}`, {
-    json: {
-      content: null,
-      ...payload,
-    },
-  }).catch(logErrResponse);
+  if (!server.loghook && !server.statushook) {
+    payload.embeds.forEach(({ title, description }) =>
+      console.log(`${server.name} -> ${title}: ${description || '-'}`)
+    );
+  }
+  const args = { json: { content: null, ...payload, } };
+  got.post(server.loghook, args).catch(err => logErrResponse(server, err));
+  got.patch(`${server.statushook}/messages/${server.messageId}`, args).catch(err => logErrResponse(server, err));
 };
 
 const getBaseEmbed = server => ({
@@ -73,7 +66,7 @@ module.exports.onReboot = server => update(server, {
 module.exports.onLobby = server => update(server, {
   embeds: [{
     ...getBaseEmbed(server),
-    title: "Lobby",
+    title: "Lobby ready to join!",
     color: 0x0ac520
   }]
 });
