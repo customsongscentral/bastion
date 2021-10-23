@@ -1,40 +1,49 @@
 const got = require("got");
 
-const create = async (server, payload) => {
-  if (!server.webhook) {
-    return payload.embeds.forEach(({ title, description }) =>
-      console.log(`${server.name} -> ${title}: ${description}`)
-    );
-  }
-  const { body } = await got.post(`${server.webhook}?wait=true`, {
+// We maintain 2 kinds of webhooks:
+// - A "loghook": This just creates a new message for everything, which will most likely flood a channel.
+// - A "statushook": This creates only one message and subsequent updates will use the same message.
+//   Useful for a "server status" channel.
+// Both of them are optional: use both, one of them or none.
+
+const logErrResponse = err => console.error('Hook error:', server.name, err.response.body, payload);
+
+const generate = async (server, payload) => {
+  payload.embeds.forEach(({ title, description }) =>
+    console.log(`${server.name} -> ${title}: ${description || '-'}`)
+  );
+  const args = {
     responseType: 'json',
     json: {
       content: null,
       ...payload,
     },
-  });
-  return body.id;
+  }
+  if (server.loghook) got.post(server.loghook, args).catch(logErrResponse);
+  if (server.statushook) {
+    const { body } = await got.post(`${server.statushook}?wait=true`, args);
+    return body.id;
+  }
 };
 
 const update = (server, payload) => {
-  if (!server.webhook) {
-    return payload.embeds.forEach(({ title, description }) =>
-      console.log(`Hook -> ${title}: ${description}`)
-    );
-  }
+  payload.embeds.forEach(({ title, description }) =>
+    console.log(`Hook -> ${title}: ${description}`)
+  );
 
-  got.patch(`${server.webhook}/messages/${server.messageId}`, {
+  got.post(server.loghook, args).catch(logErrResponse);
+  got.patch(`${server.statushook}/messages/${server.messageId}`, {
     json: {
       content: null,
       ...payload,
     },
-  }).catch((err) => console.error(server.name, err.response.body, payload));
+  }).catch(logErrResponse);
 };
 
 const getBaseEmbed = server => ({
   fields: server.players.map((player, i) => ({
     name: `Player ${i+1}`,
-    value: "`" + player.name + "`",
+    value: player ? "`" + player.name + "`" : '-',
     inline: true,
   })),
   author: { name: `${server.name} on port ${server.port}` },
@@ -46,13 +55,11 @@ const getBaseEmbed = server => ({
 });
 
 module.exports.onBoot = async server => {
-  server.messageId = await create(server, {
-    embeds: [
-      {
-        title: "Server is booting...",
-        description: `Please wait a bit... If this takes too long, this is probably fucked.`,
-      },
-    ],
+  server.messageId = await generate(server, {
+    embeds: [{
+      title: "Server is booting...",
+      description: `Please wait a bit... If this takes too long, this is probably fucked.`,
+    }]
   });
 };
 

@@ -19,6 +19,7 @@ Sample                                          | Description
 `chat 1 yo you suck mate`                       | Chat messages. arg1 = player index, rest = message.
 `game 1 133769 420 69.727`                      | Gameplay event. arg1 = player index, arg2 = score, arg3 = combo, arg4 = SP.
 `songLength 420.420`                            | Song length in seconds.
-`profile 1 69 420 ...`                          | Profile information. arg1 = player index, rest = information as ASCII bytes[]: it should contain the profile name notably.
 `scene lobby`                                   | Signals scene changes.
 `stats 1 133769 420 727 12 69.6`                | Result stats. Args = player index, score, max streak, notes hit, SP hit, SP accrued * 100.
+`profile 1 69 420 ...`                          | Profile information upon player connection. arg1 = player index, rest = information as ASCII bytes[]: it should contain the profile name notably.
+`disconnect 1`                                  | Player disconnection event. arg1 = player index.

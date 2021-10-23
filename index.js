@@ -5,18 +5,31 @@ const child = require("child_process");
 const discord = require('./discord');
 const { CHSERVER_BIN_PATH, BASTION_WS_PORT } = process.env;
 
+let cache = [];
+try {
+  cache = require('./cache.json');
+  console.log('Cache found, recovering state...');
+} catch {
+  console.log('Nothing cached, starting from scratch...');
+}
+
 const servers = [];
 for (let i = 1; process.env[`BASTION_SERVER_${i}_NAME`]; ++i) {
   servers.push({
     name: process.env[`BASTION_SERVER_${i}_NAME`],
     password: process.env[`BASTION_SERVER_${i}_PASSWORD`],
     port: process.env[`BASTION_SERVER_${i}_PORT`],
-    webhook: process.env[`BASTION_SERVER_${i}_WEBHOOK`],
+    loghook: process.env[`BASTION_SERVER_${i}_LOGHOOK`],
+    statushook: process.env[`BASTION_SERVER_${i}_STATUSHOOK`],
+    scene: 'lobby',
     players: [],
     // TODO: Explore the ability to broadcast multiple games,
     // perhaps through multiple WebSocket servers?
     broadcast: i === 1
   });
+  if (cache[i-1]) {
+    servers[i-1].messageId = cache[i-1].messageId;
+  }
 }
 if (!servers.length) throw new Error('Please `cp .env.example .env` and follow the example to configure servers.');
 
@@ -71,6 +84,15 @@ const onGameData = (msg, server) => {
       // Players can only join in the lobby, and that hook refreshes the players
       discord.onLobby(server);
     }
+  } else if (msg.startsWith('disconnect')) {
+    server.players[msg.split(' ')[1]] = null;
+    switch (server.scene) {
+      case 'lobby': discord.onLobby(server); break;
+      case 'songList': discord.onSongList(server); break;
+      case 'instrument': discord.onSongSelect(server); break;
+      case 'gameplay': discord.onGameplay(server); break;
+      case 'stats': discord.onResults(server); break;
+    }
   } else if (msg.startsWith('chat')) {
     // Just forward chat messages for now, but some of them from playerIndex 255
     // might contain hookable information.
@@ -116,7 +138,13 @@ const onGameData = (msg, server) => {
 };
 
 const main = async () => {
-  await Promise.all(servers.map(discord.onBoot));
+  for (const server of servers) {
+    if (server.messageId) {
+      await discord.onReboot(server);
+    } else {
+      await discord.onBoot(server);
+    }
+  }
   wss = new WebSocket.Server({ port: BASTION_WS_PORT });
   const spawns = servers.map(server => child.spawn(CHSERVER_BIN_PATH, [
     '-p', server.port,
@@ -142,6 +170,7 @@ const main = async () => {
         const index = servers.find(server => server.password == password);
         if (!servers[index]) return;
 
+        discord.onReboot(servers[index]);
         spawns[index].kill();
         await new Promise(r => setTimeout(r, 2000));
         spawns[index] = child.spawn(CHSERVER_BIN_PATH, [
@@ -151,7 +180,8 @@ const main = async () => {
           ...(server.password ? ['-ps', server.password] : ['-np'])
         ]);
         spawns[index].stdout.on('data', makeOnGameData(servers[index]));
-        SERVERS[index].players = [];
+        servers[index].scene = 'lobby';
+        servers[index].players = [];
       }
     });
   });
@@ -161,3 +191,10 @@ const main = async () => {
 child.exec(`ps x | grep chserver | awk '{print $1}' | xargs kill`, main);
 // The above is Linux-only, so if you're testing on another OS, just use the following:
 // main();
+
+// On graceful exits, save server state for next boot
+process.on('exit', () => {
+  const fs = require('fs');
+  const path = require('path');
+  fs.writeFileSync(path.resolve(__dirname, 'cache.json'), JSON.stringify(servers, null, 2));
+});
