@@ -157,7 +157,8 @@ const main = async () => {
   let cache;
   wss.on("connection", socket => {
     if (cache) socket.send(cache);
-    socket.on("message", async msg => {
+    socket.on("message", async buffer => {
+      const msg = buffer.toString('utf8');
       if (msg[0] == '{') {
         cache = msg;
         wss.clients.forEach(s => {
@@ -167,10 +168,11 @@ const main = async () => {
         });
       } else if (msg.startsWith('please restart ')) {
         const password = msg.replace('please restart ', '').trim();
-        const index = servers.find(server => server.password == password);
-        if (!servers[index]) return;
+        const index = servers.findIndex(server => server.password == password);
+        const server = servers[index];
+        if (!server) return;
 
-        discord.onReboot(servers[index]);
+        discord.onReboot(server);
         spawns[index].kill();
         await new Promise(r => setTimeout(r, 2000));
         spawns[index] = child.spawn(CHSERVER_BIN_PATH, [
@@ -179,9 +181,9 @@ const main = async () => {
           '-n', server.name,
           ...(server.password ? ['-ps', server.password] : ['-np'])
         ]);
-        spawns[index].stdout.on('data', makeOnGameData(servers[index]));
-        servers[index].scene = 'lobby';
-        servers[index].players = [];
+        spawns[index].stdout.on('data', makeOnGameData(server));
+        server.scene = 'lobby';
+        server.players = [];
       }
     });
   });
