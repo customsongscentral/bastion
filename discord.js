@@ -99,12 +99,16 @@ module.exports.onGameplay = server => update(server, {
 
 // TODO: Find a way to reconcile chart hash with meta:
 // this would enable computing %s, adding optimal, missed notes and so on...
-module.exports.onResults = server => update(server, {
-  embeds: [{
-    ...getBaseEmbed(server),
-    title: `${server.song.hash} (${server.song.speed}%)`,
-    description: `\`${server.players[0].name}\`: **${server.players[0].score}** (${server.players[0].streak} streak, ${server.players[0].sp} SPs)
-\`${server.players[1].name}\`: **${server.players[1].score}** (${server.players[1].streak} streak, ${server.players[1].sp} SPs)`,
-    color: 0x2e60ff
-  }]
-});
+module.exports.onResults = server => {
+  const player1 = server.players[0] || { name: '<disconnected!>', score: '-', notes: '-', streak: '-', sp: '-' };
+  const player2 = server.players[1] || { name: '<disconnected!>', score: '-', notes: '-', streak: '-', sp: '-' };
+  return update(server, {
+    embeds: [{
+      ...getBaseEmbed(server),
+      title: `${server.song.hash} (${server.song.speed}%)`,
+      description: `\`${player1.name}\`: **${player1.score}** (${player1.notes} notes, ${player1.streak} streak, ${player1.sp / 10} SPs)
+\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp} SPs)`,
+      color: 0x2e60ff
+    }]
+  });
+};
