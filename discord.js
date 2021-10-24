@@ -107,7 +107,10 @@ module.exports.onResults = server => {
       ...getBaseEmbed(server),
       title: `${server.song.hash} (${server.song.speed}%)`,
       description: `\`${player1.name}\`: **${player1.score}** (${player1.notes} notes, ${player1.streak} streak, ${player1.sp / 10} SPs)
-\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp / 10} SPs)`,
+\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp / 10} SPs)
+Airtable copypasta (paste in "Input view"):
+P1 first: \`${[player1.score, player1.notes, player1.streak, player1.sp, player2.score, player2.notes, player2.streak, player2.sp].join('\t')}\`
+P2 first: \`${[player2.score, player2.notes, player2.streak, player2.sp, player1.score, player1.notes, player1.streak, player1.sp].join('\t')}\``,
       color: 0x2e60ff
     }]
   });
