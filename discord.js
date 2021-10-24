@@ -42,7 +42,7 @@ const getBaseEmbed = server => ({
   author: { name: `${server.name} on port ${server.port}` },
   footer: {
     text: server.password
-      ? `\nPassword: \`${server.password}\``
+      ? `\nPassword: ${server.password}`
       : "No password required!",
   }
 });
