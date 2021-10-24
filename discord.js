@@ -107,7 +107,7 @@ module.exports.onResults = server => {
       ...getBaseEmbed(server),
       title: `${server.song.hash} (${server.song.speed}%)`,
       description: `\`${player1.name}\`: **${player1.score}** (${player1.notes} notes, ${player1.streak} streak, ${player1.sp / 10} SPs)
-\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp} SPs)`,
+\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp / 10} SPs)`,
       color: 0x2e60ff
     }]
   });
