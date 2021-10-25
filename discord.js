@@ -39,12 +39,7 @@ const getBaseEmbed = server => ({
     value: player ? "`" + player.name + "`" : '-',
     inline: true,
   })),
-  author: { name: `${server.name} on port ${server.port}` },
-  footer: {
-    text: server.password
-      ? `\nPassword: ${server.password}`
-      : "No password required!",
-  }
+  author: { name: `${server.name} on port ${server.port}` }
 });
 
 module.exports.onBoot = async server => {
@@ -67,7 +62,12 @@ module.exports.onLobby = server => update(server, {
   embeds: [{
     ...getBaseEmbed(server),
     title: "Lobby ready to join!",
-    color: 0x0ac520
+    color: 0x0ac520,
+    footer: {
+      text: server.password
+        ? `\nPassword: ${server.password}`
+        : "No password required!",
+    }
   }]
 });
 
@@ -107,11 +107,11 @@ module.exports.onResults = server => {
       ...getBaseEmbed(server),
       title: `${server.song.hash} (${server.song.speed}%)`,
       description: `\`${player1.name}\`: **${player1.score}** (${player1.notes} notes, ${player1.streak} streak, ${player1.sp / 10} SPs)
-\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp / 10} SPs)
-Airtable copypasta (paste in "Input view"):
-P1 first: \`${[player1.score, player1.notes, player1.streak, player1.sp, player2.score, player2.notes, player2.streak, player2.sp].join('\t')}\`
-P2 first: \`${[player2.score, player2.notes, player2.streak, player2.sp, player1.score, player1.notes, player1.streak, player1.sp].join('\t')}\``,
-      color: 0x2e60ff
+\`${player2.name}\`: **${player2.score}** (${player2.notes} notes, ${player2.streak} streak, ${player2.sp / 10} SPs)`,
+      color: 0x2e60ff,
+      footer: {
+        text: [player1.score, player1.notes, player1.streak, player1.sp/10, player2.score, player2.notes, player2.streak, player2.sp/10].join('\t'),
+      }
     }]
   });
 };
