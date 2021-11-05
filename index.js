@@ -25,7 +25,7 @@ for (let i = 1; process.env[`BASTION_SERVER_${i}_NAME`]; ++i) {
     players: [],
     // TODO: Explore the ability to broadcast multiple games,
     // perhaps through multiple WebSocket servers?
-    broadcast: i === 1
+    broadcast: process.env[`BASTION_SERVER_${i}_BROADCAST`]
   });
   if (cache[i-1]) {
     servers[i-1].messageId = cache[i-1].messageId;
