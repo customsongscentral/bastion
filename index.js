@@ -21,7 +21,7 @@ for (let i = 1; process.env[`BASTION_SERVER_${i}_NAME`]; ++i) {
     port: process.env[`BASTION_SERVER_${i}_PORT`],
     loghook: process.env[`BASTION_SERVER_${i}_LOGHOOK`],
     statushook: process.env[`BASTION_SERVER_${i}_STATUSHOOK`],
-    scene: 'lobby',
+    scene: 'Lobby',
     players: [],
     // TODO: Explore the ability to broadcast multiple games,
     // perhaps through multiple WebSocket servers?
@@ -68,13 +68,7 @@ const onGameData = (msg, server) => {
   } else if (msg.startsWith("profile")) {
     // For profiles, we only really want to know who joined in which spot,
     // not the entire profile information.
-    const [, playerIndex, ...rest] = msg.split(' ');
-    let name = '';
-    // Profile string starts at the 3rd byte,
-    // and anything below 32 (space) should mark the end of the profile name string.
-    for (let i = 1; +rest[i] >= 32; ++i) {
-      name += String.fromCharCode(rest[i]);
-    }
+    let [, playerIndex, name] = msg.split(' ');
     // Trim tags away just in case
     name = name.trim().replace(/<[^>]*(b|i|color|size|material|quad)[^>]*>/g, "");
     // If the player hasn't changed, don't send the information again
@@ -87,11 +81,11 @@ const onGameData = (msg, server) => {
   } else if (msg.startsWith('disconnect')) {
     server.players[msg.split(' ')[1]] = null;
     switch (server.scene) {
-      case 'lobby': discord.onLobby(server); break;
-      case 'songList': discord.onSongList(server); break;
-      case 'instrument': discord.onSongSelect(server); break;
-      case 'gameplay': discord.onGameplay(server); break;
-      case 'stats': discord.onResults(server); break;
+      case 'Lobby': discord.onLobby(server); break;
+      case 'SongList': discord.onSongList(server); break;
+      case 'Instrument': discord.onSongSelect(server); break;
+      case 'Gameplay': discord.onGameplay(server); break;
+      case 'Stats': discord.onResults(server); break;
     }
   } else if (msg.startsWith('chat')) {
     // Just forward chat messages for now, but some of them from playerIndex 255
@@ -102,11 +96,11 @@ const onGameData = (msg, server) => {
     const [, scene] = msg.split(' ');
     server.scene = scene;
     switch (scene) {
-      case 'lobby': discord.onLobby(server); break;
-      case 'songList': discord.onSongList(server); break;
-      case 'instrument': discord.onSongSelect(server); break;
-      case 'gameplay': discord.onGameplay(server); break;
-      case 'stats': discord.onResults(server); break;
+      case 'Lobby': discord.onLobby(server); break;
+      case 'SongList': discord.onSongList(server); break;
+      case 'Instrument': discord.onSongSelect(server); break;
+      case 'Gameplay': discord.onGameplay(server); break;
+      case 'Stats': discord.onResults(server); break;
     }
   } else if (msg.startsWith('addSong')) {
     if (server.broadcast) broadcast(msg);
@@ -129,7 +123,7 @@ const onGameData = (msg, server) => {
     player.spAccrued = spAccrued;
     // If the stats are already shown and this is coming for some reason,
     // refresh Discord with the extra information
-    if (server.scene == 'stats') discord.onResults(server);
+    if (server.scene == 'Stats') discord.onResults(server);
   } else if (msg.includes("Server running")) {
     // Detect that the server is actually online through the default logging
     if (server.broadcast) broadcast('online');
@@ -182,7 +176,7 @@ const main = async () => {
           ...(server.password ? ['-ps', server.password] : ['-np'])
         ]);
         spawns[index].stdout.on('data', makeOnGameData(server));
-        server.scene = 'lobby';
+        server.scene = 'Lobby';
         server.players = [];
       }
     });
